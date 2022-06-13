@@ -1,7 +1,8 @@
 from tkinter import *
-from tkinter import ttk
+from tkinter import  ttk
 from tkinter import filedialog
 import pandas as pd
+import win32com.client as win32
 
 janela = Tk()
 janela.title("Tratamento dos dados de ASO")
