@@ -1,30 +1,15 @@
 from tkinter import *
-<<<<<<< HEAD
-from tkinter import  ttk
-from tkinter import filedialog
-import pandas as pd
-import win32com.client as win32
-=======
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
 import pandas as pd
 from codecs import open as codeopen
->>>>>>> bebd5ab46cd4eef7b7104c740e3623487e37c1d3
-
-#Upload do arquivo
-
-def wrap_text_file():    
-    file = codeopen(
-        askopenfilename(filetypes=[('CSV Files', '*.csv')]), 
-        encoding='utf-8')
-    yield file
-    file.close()
 
 #Interface
 
 janela = Tk()
 janela.title("Tratamento dos dados de ASO")
 janela.geometry("500x300")
+janela.iconbitmap("icon.ico")
 
 listaClientes = ["BanQi", "Privalia"]
 
@@ -50,6 +35,15 @@ lb_final = Label(janela, text="Final: ")
 lb_final.pack()
 dataFinal = Entry(janela, width=10)
 dataFinal.pack()
+
+#Upload do arquivo
+
+def wrap_text_file():    
+    file = codeopen(
+        askopenfilename(filetypes=[('CSV Files', '*.csv')]), 
+        encoding='utf-8')
+    yield file
+    file.close()
 
 #Funções de tratamento
 
@@ -88,7 +82,7 @@ def tratar_banqi():
         
 
     base = pd.DataFrame(dados, columns = ["datas", "termos", "posição"])
-    base.to_csv("C:/Users/yuric/Documents/github/apis/robo/nova_base.csv")
+    base.to_csv("C:/Users/User/Documents/git-e-github/Meus arquivos/apis/robo/nova_base.csv")
 
 def tratar_privalia():
     arquivoPasta = next(wrap_text_file())
@@ -127,7 +121,7 @@ def tratar_privalia():
         j=0
 
     base = pd.DataFrame(dados, columns = ["datas", "termos", "id", "posição"])
-    base.to_csv("C:/Users/yuric/Documents/github/apis/robo/nova_base.csv")
+    base.to_csv("C:/Users/User/Documents/git-e-github/Meus arquivos/apis/robo/nova_base.csv")
 
 def tratar_dados():
     cliente = cb_clientes.get()
