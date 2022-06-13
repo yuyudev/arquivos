@@ -4,6 +4,7 @@ from tkinter import filedialog
 import pandas as pd
 import win32com.client as win32
 
+
 janela = Tk()
 janela.title("Tratamento dos dados de ASO")
 janela.geometry("500x300")
@@ -71,12 +72,12 @@ def tratar_banqi():
 
     for data in datas:
         for termo in termos:      
-            dados.append((data,termo,chave[i]))
+            dados.append((data,termo,chave[i]), encodings="UTF-8")
             i = i + 1
         
 
     base = pd.DataFrame(dados, columns = ["datas", "termos", "posição"])
-    base.to_csv("C:/Users/User/Documents/git-e-github/Meus arquivos/apis/robo/nova_base.csv", encoding="UTF-8")
+    base.to_csv("C:/Users/yuric/Documents/github/apis/robo/nova_base.csv")
 
 def tratar_privalia():
     arquivoPasta = filedialog.askopenfile()
@@ -118,7 +119,7 @@ def tratar_privalia():
 
 
     base = pd.DataFrame(dados, columns = ["datas", "termos", "id", "posição"])
-    base.to_csv("C:/Users/User/Documents/git-e-github/Meus arquivos/apis/robo/nova_base.csv")
+    base.to_csv("C:/Users/yuric/Documents/github/apis/robo/nova_base.csv", encoding="UTF-8")
 
 def tratar_dados():
     cliente = cb_clientes.get()
