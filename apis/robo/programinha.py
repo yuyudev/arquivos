@@ -1,51 +1,56 @@
 from tkinter import *
 from tkinter import ttk
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import askdirectory, askopenfilename
 import pandas as pd
 from codecs import open as codeopen
 
 #Interface
-
 janela = Tk()
 janela.title("Tratamento dos dados de ASO")
 janela.geometry("500x300")
-janela.iconbitmap("icon.ico")
 
-listaClientes = ["BanQi", "Privalia"]
+#Escolhendo diretorio para salvar
+campo_pasta = Entry(janela, width=50, state="disabled")
+campo_pasta.place(x=160,y=8)
+pasta=askdirectory
+def escolher_pasta():
 
+    campo_pasta.config(state="normal")
+    global pasta
+    pasta = askdirectory()
+    campo_pasta.insert(END, pasta)
+    campo_pasta.config(state="disabled")
+
+botao_caminho = Button(janela, text="Escolha a pasta: ", width=15, background="lightblue", command=escolher_pasta)
+botao_caminho.place(x=25,y=4)
+
+#ComboBox clientes
 lb_clientes = Label(janela, text="Selecione o cliente:")
-lb_clientes.pack()
-
+lb_clientes.place(x=200,y=70)
+listaClientes = ["BanQi", "Privalia"]
 cb_clientes = ttk.Combobox(janela, values=listaClientes)
 cb_clientes.set("BanQi")
-cb_clientes.pack()
+cb_clientes.place(x=180,y=90)
 
-banqi = cb_clientes.set("BanQi")
-privalia = cb_clientes.set("Privalia")
-
+#Definindo datas
 lb_periodo = Label(janela, text="Selecione o período dos dados:")
-lb_periodo.pack()
-
+lb_periodo.place(x=170,y=125)
 lb_inicio = Label(janela, text="Início: ")
-lb_inicio.pack()
+lb_inicio.place(x=180,y=150)
 dataInicial = Entry(janela, width=10)
-dataInicial.pack()
-
+dataInicial.place(x=180,y=170)
 lb_final = Label(janela, text="Final: ")
-lb_final.pack()
+lb_final.place(x=270,y=150)
 dataFinal = Entry(janela, width=10)
-dataFinal.pack()
+dataFinal.place(x=270,y=170)
 
-#Upload do arquivo
-
+#Funções de tratamento
 def wrap_text_file():    
     file = codeopen(
         askopenfilename(filetypes=[('CSV Files', '*.csv')]), 
         encoding='utf-8')
     yield file
     file.close()
-
-#Funções de tratamento
 
 def tratar_banqi():
     arquivoPasta = next(wrap_text_file())
@@ -82,7 +87,7 @@ def tratar_banqi():
         
 
     base = pd.DataFrame(dados, columns = ["datas", "termos", "posição"])
-    base.to_csv("C:/Users/User/Documents/git-e-github/Meus arquivos/apis/robo/nova_base.csv")
+    base.to_csv(pasta+"/nova_base.csv")
 
 def tratar_privalia():
     arquivoPasta = next(wrap_text_file())
@@ -121,7 +126,7 @@ def tratar_privalia():
         j=0
 
     base = pd.DataFrame(dados, columns = ["datas", "termos", "id", "posição"])
-    base.to_csv("C:/Users/User/Documents/git-e-github/Meus arquivos/apis/robo/nova_base.csv")
+    base.to_csv(pasta+"/nova_base.csv")
 
 def tratar_dados():
     cliente = cb_clientes.get()
@@ -130,7 +135,7 @@ def tratar_dados():
     elif cliente == "Privalia":
         tratar_privalia()
 
-botao = Button(janela, text="Go!", width=5, height=1, background="lightblue", command=tratar_dados)
-botao.pack()
+botao = Button(janela, text="Go!", width=5, height=1, background="pink", command=tratar_dados)
+botao.place(x=230,y=200)
 
 janela.mainloop()
