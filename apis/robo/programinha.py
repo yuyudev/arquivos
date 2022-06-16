@@ -44,6 +44,8 @@ lb_final.place(x=270,y=150)
 dataFinal = Entry(janela, width=10)
 dataFinal.place(x=270,y=170)
 
+
+
 #Funções de tratamento
 def wrap_text_file():    
     file = codeopen(
@@ -53,24 +55,35 @@ def wrap_text_file():
     file.close()
 
 def tratar_banqi():
+    #Recebendo as datas
+    retornoDataFinal=dataFinal.get()
+    retornoDataInicial=dataInicial.get()
+    diaInicial=retornoDataInicial[0:2]
+    mesI=retornoDataInicial[3:5]
+    anoI=retornoDataInicial[6:10]
+    diaFinal=retornoDataFinal[0:2]
+    mesF=retornoDataFinal[3:5]
+    anoF=retornoDataFinal[6:10]
+    dataInicialTratada=f"{anoI}-{mesI}-{diaInicial}"
+    dataFinalTratada=f"{anoF}-{mesF}-{diaFinal}"
+
+    #Seleção das colunas
     arquivoPasta = next(wrap_text_file())
     arquivo = pd.read_csv(arquivoPasta, sep = ",")
-    datas = arquivo.T[str(dataFinal.get()):str(dataInicial.get())]
+    datas = arquivo.T[dataFinalTratada:dataInicialTratada]
     termos = arquivo["Term"]
-    posicoes = arquivo.T[str(dataFinal.get()):str(dataInicial.get())]
+    posicoes = arquivo.T[dataFinalTratada:dataInicialTratada]
     x = posicoes.to_numpy()
 
-    #seleção dos dados de datas
-
+    #Seleção dos dados de datas
     datas.reset_index(inplace=True)
     datas = datas["index"]
 
+    #Definição de colunas
     colunaTermos = column = termos
     colunaDatas = column = datas
 
-
-    #tratamento dos dados
-
+    #Tratamento dos dados
     dados = []
     chave = []
 
@@ -85,30 +98,42 @@ def tratar_banqi():
             dados.append((data,termo,chave[i]))
             i = i + 1
         
-
+    #Criação do arquivo final
     base = pd.DataFrame(dados, columns = ["datas", "termos", "posição"])
     base.to_csv(pasta+"/nova_base.csv")
 
 def tratar_privalia():
+    #Recebendo as datas
+    retornoDataFinal=dataFinal.get()
+    retornoDataInicial=dataInicial.get()
+    diaInicial=retornoDataInicial[0:2]
+    mesI=retornoDataInicial[3:5]
+    anoI=retornoDataInicial[6:10]
+    diaFinal=retornoDataFinal[0:2]
+    mesF=retornoDataFinal[3:5]
+    anoF=retornoDataFinal[6:10]
+    dataInicialTratada=f"{anoI}-{mesI}-{diaInicial}"
+    dataFinalTratada=f"{anoF}-{mesF}-{diaFinal}"
+
+    #Seleção das colunas
     arquivoPasta = next(wrap_text_file())
-    arquivo = pd.read_csv(arquivoPasta, encoding = "utf8", sep = ",")
-    datas = arquivo.T[str(dataFinal.get()):str(dataInicial.get())]
+    arquivo = pd.read_csv(arquivoPasta, sep = ",")
+    datas = arquivo.T[dataFinalTratada:dataInicialTratada]
     termos = arquivo["Term"]
     appId = arquivo["App ID"].values
-    posicoes = arquivo.T[str(dataFinal.get()):str(dataInicial.get())]
+    posicoes = arquivo.T[dataFinalTratada:dataInicialTratada]
     x = posicoes.to_numpy()
 
-    #seleção dos dados de datas
-
+    #Seleção dos dados de datas
     datas.reset_index(inplace=True)
     datas = datas["index"]
 
+    #Defnição das colunas
     colunaTermos = column = termos
     colunaAppID = column = appId
     colunaDatas = column = datas
 
-    #tratamento dos dados
-
+    #Tratamento dos dados
     dados = []
     chave = []
 
@@ -125,6 +150,7 @@ def tratar_privalia():
             i = i + 1
         j=0
 
+    #Criação do arquivo final
     base = pd.DataFrame(dados, columns = ["datas", "termos", "id", "posição"])
     base.to_csv(pasta+"/nova_base.csv")
 
