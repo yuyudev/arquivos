@@ -1,8 +1,56 @@
+#Importando bibliotecas de autenticação do Google
+from __future__ import print_function
+
+import os.path
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
+#Outras importações
 from tkinter import *
 from tkinter import ttk
 from tkinter.filedialog import askdirectory, askopenfilename
 import pandas as pd
 from codecs import open as codeopen
+
+#API Google Sheets
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+
+def main(data):
+    creds = None
+
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'client_secret.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+
+    service = build('sheets', 'v4', credentials=creds)
+
+    # Call the Sheets API
+    sheet = service.spreadsheets()
+    result = sheet.values().get(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
+                                    range='android keywords ranking!B:E').execute()
+    values = result.get('values', [])
+    teste = pd.DataFrame(values)
+    local = str((teste.iloc[-1].name+2))
+
+    result = sheet.values().update(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
+                                range='android keywords ranking!B'+local, valueInputOption='USER_ENTERED',
+                                body={'values': data}).execute()
+
+
 
 #Interface
 janela = Tk()
@@ -13,11 +61,12 @@ janela.geometry("500x300")
 campo_pasta = Entry(janela, width=50, state="disabled")
 campo_pasta.place(x=160,y=8)
 pasta=askdirectory
-def escolher_pasta():
 
+def escolher_pasta():
     campo_pasta.config(state="normal")
     global pasta
     pasta = askdirectory()
+    campo_pasta.delete(0, END)
     campo_pasta.insert(END, pasta)
     campo_pasta.config(state="disabled")
 
@@ -43,7 +92,6 @@ lb_final = Label(janela, text="Final: ")
 lb_final.place(x=270,y=150)
 dataFinal = Entry(janela, width=10)
 dataFinal.place(x=270,y=170)
-
 
 
 #Funções de tratamento
@@ -145,14 +193,17 @@ def tratar_privalia():
 
     for data in datas:
         for termo in termos:      
-            dados.append((data,termo,appId[j],chave[i]))
+            dados.append((str(termo),str(appId[j]),str(chave[i]),str(data)))
             j = j + 1
             i = i + 1
         j=0
 
     #Criação do arquivo final
-    base = pd.DataFrame(dados, columns = ["datas", "termos", "id", "posição"])
-    base.to_csv(pasta+"/nova_base.csv")
+    base = pd.DataFrame(dados, columns = ["termos", "id", "posição","datas"])
+    base_new = base.values.tolist()
+    main(base_new)
+
+
 
 def tratar_dados():
     cliente = cb_clientes.get()
@@ -163,5 +214,6 @@ def tratar_dados():
 
 botao = Button(janela, text="Go!", width=5, height=1, background="pink", command=tratar_dados)
 botao.place(x=230,y=200)
+
 
 janela.mainloop()
