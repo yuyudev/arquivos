@@ -12,7 +12,7 @@ from googleapiclient.errors import HttpError
 #Outras importações
 from tkinter import *
 from tkinter import ttk
-from tkinter.filedialog import askdirectory, askopenfilename
+from tkinter.filedialog import askopenfilename
 import pandas as pd
 from codecs import open as codeopen
 
@@ -50,28 +50,10 @@ def main(data):
                                 range='android keywords ranking!B'+local, valueInputOption='USER_ENTERED',
                                 body={'values': data}).execute()
 
-
-
 #Interface
 janela = Tk()
 janela.title("Tratamento dos dados de ASO")
 janela.geometry("500x300")
-
-#Escolhendo diretorio para salvar
-campo_pasta = Entry(janela, width=50, state="disabled")
-campo_pasta.place(x=160,y=8)
-pasta=askdirectory
-
-def escolher_pasta():
-    campo_pasta.config(state="normal")
-    global pasta
-    pasta = askdirectory()
-    campo_pasta.delete(0, END)
-    campo_pasta.insert(END, pasta)
-    campo_pasta.config(state="disabled")
-
-botao_caminho = Button(janela, text="Escolha a pasta: ", width=15, background="lightblue", command=escolher_pasta)
-botao_caminho.place(x=25,y=4)
 
 #ComboBox clientes
 lb_clientes = Label(janela, text="Selecione o cliente:")
@@ -118,16 +100,15 @@ def tratar_banqi():
     #Seleção das colunas
     arquivoPasta = next(wrap_text_file())
     arquivo = pd.read_csv(arquivoPasta, sep = ",")
-    datas = arquivo.T[dataFinalTratada:dataInicialTratada]
-    termos = arquivo["Term"]
-    posicoes = arquivo.T[dataFinalTratada:dataInicialTratada]
-    x = posicoes.to_numpy()
+    datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
+    termos = arquivo["Term"].fillna('')
+    posicoes = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('').values
 
     #Seleção dos dados de datas
     datas.reset_index(inplace=True)
     datas = datas["index"]
 
-    #Definição de colunas
+    #Definição das colunas
     colunaTermos = column = termos
     colunaDatas = column = datas
 
@@ -135,20 +116,29 @@ def tratar_banqi():
     dados = []
     chave = []
 
-    for i in x:
+    for i in posicoes:
         for y in i:
-            chave.append(y)
+            if type(y) == str:
+                chave.append(y)
+            else:
+                chave.append('%.0f'%y)
     i = 0
     j = 0
 
+    #Adicionando novos dados
     for data in datas:
         for termo in termos:      
-            dados.append((data,termo,chave[i]))
+            dados.append((str(termo),str(chave[i]),str(data)))
+            j = j + 1
             i = i + 1
-        
+        j=0
+
     #Criação do arquivo final
-    base = pd.DataFrame(dados, columns = ["datas", "termos", "posição"])
-    base.to_csv(pasta+"/nova_base.csv")
+    base = pd.DataFrame(dados, columns = ["termos", "posição","datas"])
+    base.sort_values(by=['datas'], inplace=True)
+    print(base)
+    base_new = base.values.tolist()
+    main(base_new)
 
 def tratar_privalia():
     #Recebendo as datas
@@ -166,17 +156,16 @@ def tratar_privalia():
     #Seleção das colunas
     arquivoPasta = next(wrap_text_file())
     arquivo = pd.read_csv(arquivoPasta, sep = ",")
-    datas = arquivo.T[dataFinalTratada:dataInicialTratada]
-    termos = arquivo["Term"]
-    appId = arquivo["App ID"].values
-    posicoes = arquivo.T[dataFinalTratada:dataInicialTratada]
-    x = posicoes.to_numpy()
+    datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
+    termos = arquivo["Term"].fillna('')
+    appId = arquivo["App ID"].fillna('').values
+    posicoes = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('').values
 
     #Seleção dos dados de datas
     datas.reset_index(inplace=True)
     datas = datas["index"]
 
-    #Defnição das colunas
+    #Definição das colunas
     colunaTermos = column = termos
     colunaAppID = column = appId
     colunaDatas = column = datas
@@ -185,12 +174,16 @@ def tratar_privalia():
     dados = []
     chave = []
 
-    for i in x:
+    for i in posicoes:
         for y in i:
-            chave.append(y)
+            if type(y) == str:
+                chave.append(y)
+            else:
+                chave.append('%.0f'%y)
     i = 0
     j = 0
 
+    #Adicionando novos dados
     for data in datas:
         for termo in termos:      
             dados.append((str(termo),str(appId[j]),str(chave[i]),str(data)))
@@ -200,10 +193,9 @@ def tratar_privalia():
 
     #Criação do arquivo final
     base = pd.DataFrame(dados, columns = ["termos", "id", "posição","datas"])
+    base.sort_values(by=['datas'], inplace=True)
     base_new = base.values.tolist()
     main(base_new)
-
-
 
 def tratar_dados():
     cliente = cb_clientes.get()
@@ -214,6 +206,5 @@ def tratar_dados():
 
 botao = Button(janela, text="Go!", width=5, height=1, background="pink", command=tratar_dados)
 botao.place(x=230,y=200)
-
 
 janela.mainloop()
