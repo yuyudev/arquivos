@@ -16,195 +16,422 @@ from tkinter.filedialog import askopenfilename
 import pandas as pd
 from codecs import open as codeopen
 
-#API Google Sheets
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-
-def main(data):
-    creds = None
-
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'client_secret.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
-
-    service = build('sheets', 'v4', credentials=creds)
-
-    # Call the Sheets API
-    sheet = service.spreadsheets()
-    result = sheet.values().get(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
-                                    range='android keywords ranking!B:E').execute()
-    values = result.get('values', [])
-    teste = pd.DataFrame(values)
-    local = str((teste.iloc[-1].name+2))
-
-    result = sheet.values().update(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
-                                range='android keywords ranking!B'+local, valueInputOption='USER_ENTERED',
-                                body={'values': data}).execute()
-
 #Interface
 janela = Tk()
 janela.title("Tratamento dos dados de ASO")
 janela.geometry("500x300")
 
-#ComboBox clientes
-lb_clientes = Label(janela, text="Selecione o cliente:")
-lb_clientes.place(x=200,y=70)
-listaClientes = ["BanQi", "Privalia"]
-cb_clientes = ttk.Combobox(janela, values=listaClientes)
-cb_clientes.set("BanQi")
-cb_clientes.place(x=180,y=90)
+#Menus
+nb=ttk.Notebook(janela)
+nb.place(x=0,y=00,width=500,height=300)
 
-#Definindo datas
-lb_periodo = Label(janela, text="Selecione o período dos dados:")
-lb_periodo.place(x=170,y=125)
-lb_inicio = Label(janela, text="Início: ")
-lb_inicio.place(x=180,y=150)
-dataInicial = Entry(janela, width=10)
-dataInicial.place(x=180,y=170)
-lb_final = Label(janela, text="Final: ")
-lb_final.place(x=270,y=150)
-dataFinal = Entry(janela, width=10)
-dataFinal.place(x=270,y=170)
+#Aba Posicionamento do APP
+posicionamento_app=Frame(nb)
+nb.add(posicionamento_app,text='Posicionamento do APP')
+def pagina_posicionamento_app():
+    #ComboBox clientes
+    lb_clientes = Label(posicionamento_app, text="Selecione o cliente:")
+    lb_clientes.pack()
+    listaClientes = ["BanQi", "Privalia"]
+    cb_clientes = ttk.Combobox(posicionamento_app, values=listaClientes)
+    cb_clientes.set("BanQi")
+    cb_clientes.pack()
 
+    #API Google Sheets - Preenchimento
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
-#Funções de tratamento
-def wrap_text_file():    
-    file = codeopen(
-        askopenfilename(filetypes=[('CSV Files', '*.csv')]), 
-        encoding='utf-8')
-    yield file
-    file.close()
+    def google_sheets(data):
+        creds = None
 
-def tratar_banqi():
-    #Recebendo as datas
-    retornoDataFinal=dataFinal.get()
-    retornoDataInicial=dataInicial.get()
-    diaInicial=retornoDataInicial[0:2]
-    mesI=retornoDataInicial[3:5]
-    anoI=retornoDataInicial[6:10]
-    diaFinal=retornoDataFinal[0:2]
-    mesF=retornoDataFinal[3:5]
-    anoF=retornoDataFinal[6:10]
-    dataInicialTratada=f"{anoI}-{mesI}-{diaInicial}"
-    dataFinalTratada=f"{anoF}-{mesF}-{diaFinal}"
-
-    #Seleção das colunas
-    arquivoPasta = next(wrap_text_file())
-    arquivo = pd.read_csv(arquivoPasta, sep = ",")
-    datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
-    termos = arquivo["Term"].fillna('')
-    posicoes = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('').values
-
-    #Seleção dos dados de datas
-    datas.reset_index(inplace=True)
-    datas = datas["index"]
-
-    #Definição das colunas
-    colunaTermos = column = termos
-    colunaDatas = column = datas
-
-    #Tratamento dos dados
-    dados = []
-    chave = []
-
-    for i in posicoes:
-        for y in i:
-            if type(y) == str:
-                chave.append(y)
+        if os.path.exists('token.json'):
+            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
             else:
-                chave.append('%.0f'%y)
-    i = 0
-    j = 0
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'client_secret.json', SCOPES)
+                creds = flow.run_local_server(port=0)
+            
+            with open('token.json', 'w') as token:
+                token.write(creds.to_json())
 
-    #Adicionando novos dados
-    for data in datas:
-        for termo in termos:      
-            dados.append((str(termo),str(chave[i]),str(data)))
-            j = j + 1
-            i = i + 1
-        j=0
+        service = build('sheets', 'v4', credentials=creds)
 
-    #Criação do arquivo final
-    base = pd.DataFrame(dados, columns = ["termos", "posição","datas"])
-    base.sort_values(by=['datas'], inplace=True)
-    print(base)
-    base_new = base.values.tolist()
-    main(base_new)
+        # Call the Sheets API
+        cliente=cb_clientes.get()
+    
+        if cliente == 'Privalia':
+            sheet_privalia = service.spreadsheets()
+            result_privalia = sheet_privalia.values().get(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
+                                range='android keywords ranking!B:E').execute()
+            values_privalia = result_privalia.get('values', [])
 
-def tratar_privalia():
-    #Recebendo as datas
-    retornoDataFinal=dataFinal.get()
-    retornoDataInicial=dataInicial.get()
-    diaInicial=retornoDataInicial[0:2]
-    mesI=retornoDataInicial[3:5]
-    anoI=retornoDataInicial[6:10]
-    diaFinal=retornoDataFinal[0:2]
-    mesF=retornoDataFinal[3:5]
-    anoF=retornoDataFinal[6:10]
-    dataInicialTratada=f"{anoI}-{mesI}-{diaInicial}"
-    dataFinalTratada=f"{anoF}-{mesF}-{diaFinal}"
+            df = pd.DataFrame(values_privalia)
+            local_privalia = str((df.iloc[-1].name+2))
 
-    #Seleção das colunas
-    arquivoPasta = next(wrap_text_file())
-    arquivo = pd.read_csv(arquivoPasta, sep = ",")
-    datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
-    termos = arquivo["Term"].fillna('')
-    appId = arquivo["App ID"].fillna('').values
-    posicoes = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('').values
+            result_privalia = sheet_privalia.values().update(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
+                                range='android keywords ranking!B'+local_privalia, valueInputOption='USER_ENTERED',
+                                body={'values': data}).execute()
+            
+        elif cliente == 'BanQi':
+            sheet_banqi = service.spreadsheets()
+            result_banqi = sheet_banqi.values().get(spreadsheetId='1VcEG2qxqmFnERd1VE_N_OH1J3em9nDXgrr1HVcp1xcw',
+                                range='kw android semana!A:C').execute()
+            values_banqi = result_banqi.get('values', [])
 
-    #Seleção dos dados de datas
-    datas.reset_index(inplace=True)
-    datas = datas["index"]
+            df = pd.DataFrame(values_banqi)
+            local_banqi = str((df.iloc[-1].name+2))
 
-    #Definição das colunas
-    colunaTermos = column = termos
-    colunaAppID = column = appId
-    colunaDatas = column = datas
+            result_banqi = sheet_banqi.values().update(spreadsheetId='1VcEG2qxqmFnERd1VE_N_OH1J3em9nDXgrr1HVcp1xcw',
+                                range='kw android semana!A'+local_banqi, valueInputOption='USER_ENTERED',
+                                body={'values': data}).execute()
 
-    #Tratamento dos dados
-    dados = []
-    chave = []
+    #Definindo datas
+    lb_periodo = Label(posicionamento_app, text="Selecione o período dos dados:")
+    lb_periodo.pack()
+    lb_inicio = Label(posicionamento_app, text="Início: ")
+    lb_inicio.pack()
+    dataInicial = Entry(posicionamento_app, width=10)
+    dataInicial.pack()
+    lb_final = Label(posicionamento_app, text="Final: ")
+    lb_final.pack()
+    dataFinal = Entry(posicionamento_app, width=10)
+    dataFinal.pack()
 
-    for i in posicoes:
-        for y in i:
-            if type(y) == str:
-                chave.append(y)
+    #Funções de tratamento
+    def wrap_text_file():    
+        file = codeopen(
+            askopenfilename(filetypes=[('CSV Files', '*.csv')]), 
+            encoding='utf-16')
+        yield file
+        file.close()
+
+    def tratar_banqi():
+        #Recebendo as datas
+        retornoDataFinal=dataFinal.get()
+        retornoDataInicial=dataInicial.get()
+        diaInicial=retornoDataInicial[0:2]
+        mesI=retornoDataInicial[3:5]
+        anoI=retornoDataInicial[6:10]
+        diaFinal=retornoDataFinal[0:2]
+        mesF=retornoDataFinal[3:5]
+        anoF=retornoDataFinal[6:10]
+        dataInicialTratada=f"{anoI}-{mesI}-{diaInicial}"
+        dataFinalTratada=f"{anoF}-{mesF}-{diaFinal}"
+
+        #Seleção das colunas
+        arquivoPasta = next(wrap_text_file())
+        arquivo = pd.read_csv(arquivoPasta, sep = "	")
+        datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
+        termos = arquivo["Term"].fillna('')
+        posicoes = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('').values
+
+        #Seleção dos dados de datas
+        datas.reset_index(inplace=True)
+        datas = datas["index"]
+
+        #Definição das colunas
+        colunaTermos = column = termos
+        colunaDatas = column = datas
+
+        #Tratamento dos dados
+        dados = []
+        chave = []
+        for lista_posicoes in posicoes:
+            for posicao in lista_posicoes:
+                if type(posicao) == str:
+                    chave.append(posicao)
+                else:
+                    chave.append('%.0f'%posicao)
+
+        #Adicionando novos dados
+        i = 0
+        j = 0
+        for data in datas:
+            for termo in termos:      
+                dados.append((str(termo),str(data),str(chave[i])))
+                j = j + 1
+                i = i + 1
+            j=0
+
+        #Criação do arquivo final
+        base = pd.DataFrame(dados, columns = ["termos","datas", "posição"])
+        base.sort_values(by=["datas"], inplace=True)
+        base_new = base.values.tolist()
+        google_sheets(base_new)
+
+    def tratar_privalia():
+        #Recebendo as datas
+        retornoDataFinal=dataFinal.get()
+        retornoDataInicial=dataInicial.get()
+        diaInicial=retornoDataInicial[0:2]
+        mesI=retornoDataInicial[3:5]
+        anoI=retornoDataInicial[6:10]
+        diaFinal=retornoDataFinal[0:2]
+        mesF=retornoDataFinal[3:5]
+        anoF=retornoDataFinal[6:10]
+        dataInicialTratada=f"{anoI}-{mesI}-{diaInicial}"
+        dataFinalTratada=f"{anoF}-{mesF}-{diaFinal}"
+
+        #Seleção das colunas
+        arquivoPasta = next(wrap_text_file())
+        arquivo = pd.read_csv(arquivoPasta, sep='	')
+        datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
+        termos = arquivo["Term"].fillna('')
+        appId = arquivo["App ID"].fillna('').values
+        posicoes = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('').values
+
+        #Seleção dos dados de datas
+        datas.reset_index(inplace=True)
+        datas = datas["index"]
+
+        #Definição das colunas
+        colunaTermos = column = termos
+        colunaAppID = column = appId
+        colunaDatas = column = datas
+
+        #Tratamento dos dados
+        dados = []
+        chave = []
+        for lista_posicoes in posicoes:
+            for posicao in lista_posicoes:
+                if type(posicao) == str:
+                    chave.append(posicao)
+                else:
+                    chave.append('%.0f'%posicao)
+
+        #Adicionando novos dados
+        i = 0
+        j = 0
+        for data in datas:
+            for termo in termos:      
+                dados.append((str(termo),str(appId[j]),str(chave[i]),str(data)))
+                j = j + 1
+                i = i + 1
+            j=0
+
+        #Criação do arquivo final
+        base = pd.DataFrame(dados, columns = ["termos", "id", "posição","datas"])
+        base.sort_values(by=['datas'], inplace=True)
+        base_new = base.values.tolist()
+        google_sheets(base_new)
+
+    def tratar_dados():
+        cliente = cb_clientes.get()
+        if cliente == "BanQi":
+            tratar_banqi()
+        elif cliente == "Privalia":
+            tratar_privalia()
+
+    botao = Button(posicionamento_app, text="Go!", width=5, height=1, background="pink", command=tratar_dados)
+    botao.pack()
+pagina_posicionamento_app()
+
+#Aba Categoria
+instalacoes=Frame(nb)
+nb.add(instalacoes,text='Categoria')
+def pagina_categoria():
+
+        #ComboBox clientes
+    lb_clientes = Label(instalacoes, text="Selecione o cliente:")
+    lb_clientes.pack()
+    listaClientes = ["BanQi", "Privalia"]
+    cb_clientes = ttk.Combobox(instalacoes, values=listaClientes)
+    cb_clientes.set("BanQi")
+    cb_clientes.pack()
+
+    #API Google Sheets - Preenchimento
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+
+    def google_sheets(data):
+        creds = None
+
+        if os.path.exists('token.json'):
+            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
             else:
-                chave.append('%.0f'%y)
-    i = 0
-    j = 0
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'client_secret.json', SCOPES)
+                creds = flow.run_local_server(port=0)
+            
+            with open('token.json', 'w') as token:
+                token.write(creds.to_json())
 
-    #Adicionando novos dados
-    for data in datas:
-        for termo in termos:      
-            dados.append((str(termo),str(appId[j]),str(chave[i]),str(data)))
-            j = j + 1
-            i = i + 1
-        j=0
+        service = build('sheets', 'v4', credentials=creds)
 
-    #Criação do arquivo final
-    base = pd.DataFrame(dados, columns = ["termos", "id", "posição","datas"])
-    base.sort_values(by=['datas'], inplace=True)
-    base_new = base.values.tolist()
-    main(base_new)
+        # Call the Sheets API
+        cliente=cb_clientes.get()
+    
+        if cliente == 'Privalia':
+            sheet_privalia = service.spreadsheets()
+            result_privalia = sheet_privalia.values().get(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
+                                range='android keywords ranking!B:E').execute()
+            values_privalia = result_privalia.get('values', [])
 
-def tratar_dados():
-    cliente = cb_clientes.get()
-    if cliente == "BanQi":
-        tratar_banqi()
-    elif cliente == "Privalia":
-        tratar_privalia()
+            df = pd.DataFrame(values_privalia)
+            local_privalia = str((df.iloc[-1].name+2))
 
-botao = Button(janela, text="Go!", width=5, height=1, background="pink", command=tratar_dados)
-botao.place(x=230,y=200)
+            result_privalia = sheet_privalia.values().update(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
+                                range='android keywords ranking!B'+local_privalia, valueInputOption='USER_ENTERED',
+                                body={'values': data}).execute()
+            
+        elif cliente == 'BanQi':
+            sheet_banqi = service.spreadsheets()
+            result_banqi = sheet_banqi.values().get(spreadsheetId='1VcEG2qxqmFnERd1VE_N_OH1J3em9nDXgrr1HVcp1xcw',
+                                range='kw android semana!A:C').execute()
+            values_banqi = result_banqi.get('values', [])
+
+            df = pd.DataFrame(values_banqi)
+            local_banqi = str((df.iloc[-1].name+2))
+
+            result_banqi = sheet_banqi.values().update(spreadsheetId='1VcEG2qxqmFnERd1VE_N_OH1J3em9nDXgrr1HVcp1xcw',
+                                range='kw android semana!A'+local_banqi, valueInputOption='USER_ENTERED',
+                                body={'values': data}).execute()
+
+    #Definindo datas
+    lb_periodo = Label(instalacoes, text="Selecione o período dos dados:")
+    lb_periodo.pack()
+    lb_inicio = Label(instalacoes, text="Início: ")
+    lb_inicio.pack()
+    dataInicial = Entry(instalacoes, width=10)
+    dataInicial.pack()
+    lb_final = Label(instalacoes, text="Final: ")
+    lb_final.pack()
+    dataFinal = Entry(instalacoes, width=10)
+    dataFinal.pack()
+
+    #Funções de tratamento
+    def wrap_text_file():    
+        file = codeopen(
+            askopenfilename(filetypes=[('CSV Files', '*.csv')]), 
+            encoding='utf-16')
+        yield file
+        file.close()
+
+    def tratar_banqi():
+        #Recebendo as datas
+        retornoDataFinal=dataFinal.get()
+        retornoDataInicial=dataInicial.get()
+        diaInicial=retornoDataInicial[0:2]
+        mesI=retornoDataInicial[3:5]
+        anoI=retornoDataInicial[6:10]
+        diaFinal=retornoDataFinal[0:2]
+        mesF=retornoDataFinal[3:5]
+        anoF=retornoDataFinal[6:10]
+        dataInicialTratada=f"{anoI}-{mesI}-{diaInicial}"
+        dataFinalTratada=f"{anoF}-{mesF}-{diaFinal}"
+
+        #Seleção das colunas
+        arquivoPasta = next(wrap_text_file())
+        arquivo = pd.read_csv(arquivoPasta, sep = "	")
+        datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
+        termos = arquivo["Term"].fillna('')
+        posicoes = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('').values
+
+        #Seleção dos dados de datas
+        datas.reset_index(inplace=True)
+        datas = datas["index"]
+
+        #Definição das colunas
+        colunaTermos = column = termos
+        colunaDatas = column = datas
+
+        #Tratamento dos dados
+        dados = []
+        chave = []
+        for lista_posicoes in posicoes:
+            for posicao in lista_posicoes:
+                if type(posicao) == str:
+                    chave.append(posicao)
+                else:
+                    chave.append('%.0f'%posicao)
+
+        #Adicionando novos dados
+        i = 0
+        j = 0
+        for data in datas:
+            for termo in termos:      
+                dados.append((str(termo),str(data),str(chave[i])))
+                j = j + 1
+                i = i + 1
+            j=0
+
+        #Criação do arquivo final
+        base = pd.DataFrame(dados, columns = ["termos","datas", "posição"])
+        base.sort_values(by=["datas"], inplace=True)
+        base_new = base.values.tolist()
+        google_sheets(base_new)
+
+    def tratar_privalia():
+        #Recebendo as datas
+        retornoDataFinal=dataFinal.get()
+        retornoDataInicial=dataInicial.get()
+        diaInicial=retornoDataInicial[0:2]
+        mesI=retornoDataInicial[3:5]
+        anoI=retornoDataInicial[6:10]
+        diaFinal=retornoDataFinal[0:2]
+        mesF=retornoDataFinal[3:5]
+        anoF=retornoDataFinal[6:10]
+        dataInicialTratada=f"{anoI}-{mesI}-{diaInicial}"
+        dataFinalTratada=f"{anoF}-{mesF}-{diaFinal}"
+
+        #Seleção das colunas
+        arquivoPasta = next(wrap_text_file())
+        arquivo = pd.read_csv(arquivoPasta, sep='	')
+        datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
+        termos = arquivo["Term"].fillna('')
+        appId = arquivo["App ID"].fillna('').values
+        posicoes = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('').values
+
+        #Seleção dos dados de datas
+        datas.reset_index(inplace=True)
+        datas = datas["index"]
+
+        #Definição das colunas
+        colunaTermos = column = termos
+        colunaAppID = column = appId
+        colunaDatas = column = datas
+
+        #Tratamento dos dados
+        dados = []
+        chave = []
+        for lista_posicoes in posicoes:
+            for posicao in lista_posicoes:
+                if type(posicao) == str:
+                    chave.append(posicao)
+                else:
+                    chave.append('%.0f'%posicao)
+
+        #Adicionando novos dados
+        i = 0
+        j = 0
+        for data in datas:
+            for termo in termos:      
+                dados.append((str(termo),str(appId[j]),str(chave[i]),str(data)))
+                j = j + 1
+                i = i + 1
+            j=0
+
+        #Criação do arquivo final
+        base = pd.DataFrame(dados, columns = ["termos", "id", "posição","datas"])
+        base.sort_values(by=['datas'], inplace=True)
+        base_new = base.values.tolist()
+        google_sheets(base_new)
+
+    def tratar_dados():
+        cliente = cb_clientes.get()
+        if cliente == "BanQi":
+            tratar_banqi()
+        elif cliente == "Privalia":
+            tratar_privalia()
+
+    botao = Button(instalacoes, text="Go!", width=5, height=1, background="pink", command=tratar_dados)
+    botao.pack()
+pagina_categoria()
 
 janela.mainloop()
