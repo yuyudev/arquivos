@@ -1,6 +1,5 @@
 #Importando bibliotecas de autenticação do Google
-from __future__ import print_function
-
+from dataclasses import replace
 import os.path
 
 from google.auth.transport.requests import Request
@@ -13,8 +12,9 @@ from googleapiclient.errors import HttpError
 from tkinter import *
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
+import numpy as np
 import pandas as pd
-from codecs import open as codeopen
+from codecs import ignore_errors, open as codeopen
 
 #Interface
 janela = Tk()
@@ -36,6 +36,13 @@ def pagina_posicionamento_app():
     cb_clientes = ttk.Combobox(posicionamento_app, values=listaClientes)
     cb_clientes.set("BanQi")
     cb_clientes.pack()
+
+    lb_os = Label(posicionamento_app, text="Selecione o Sistema Operacional:")
+    lb_os.pack()
+    listaos = ["Android", "Apple"]
+    cb_os = ttk.Combobox(posicionamento_app, values=listaos)
+    cb_os.set("Android")
+    cb_os.pack()
 
     #API Google Sheets - Preenchimento
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -60,21 +67,29 @@ def pagina_posicionamento_app():
         service = build('sheets', 'v4', credentials=creds)
 
         # Call the Sheets API
+        sistema_operacional=cb_os.get()
         cliente=cb_clientes.get()
-    
         if cliente == 'Privalia':
             sheet_privalia = service.spreadsheets()
-            result_privalia = sheet_privalia.values().get(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
-                                range='android keywords ranking!B:E').execute()
-            values_privalia = result_privalia.get('values', [])
-            print(values_privalia)
-            df = pd.DataFrame(values_privalia)
-            local_privalia = str((df.iloc[-1].name+2))
+            if sistema_operacional == 'Android':
+                result_privalia = sheet_privalia.values().get(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
+                range='android keywords ranking!B:E').execute()
+                values_privalia = result_privalia.get('values', [])
+                df = pd.DataFrame(values_privalia)
+                local_privalia = str((df.iloc[-1].name+2))
 
-            result_privalia = sheet_privalia.values().update(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
-                                range='android keywords ranking!B'+local_privalia, valueInputOption='USER_ENTERED',
-                                body={'values': data}).execute()
-            
+                result_privalia = sheet_privalia.values().update(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
+                                    range='android keywords ranking!B'+local_privalia, valueInputOption='USER_ENTERED',
+                                    body={'values': data}).execute()
+            elif sistema_operacional == 'Apple':
+                result_privalia = sheet_privalia.values().get(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
+                range='iOS keywords ranking vs!B:E').execute()
+                values_privalia = result_privalia.get('values', [])
+                df = pd.DataFrame(values_privalia)
+                local_privalia = str((df.iloc[-1].name+2))
+                result_privalia = sheet_privalia.values().update(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
+                                    range='iOS keywords ranking vs!B'+local_privalia, valueInputOption='USER_ENTERED',
+                                    body={'values': data}).execute()
         elif cliente == 'BanQi':
             sheet_banqi = service.spreadsheets()
             result_banqi = sheet_banqi.values().get(spreadsheetId='1VcEG2qxqmFnERd1VE_N_OH1J3em9nDXgrr1HVcp1xcw',
@@ -180,7 +195,9 @@ def pagina_posicionamento_app():
         arquivo = pd.read_csv(arquivo_pasta, sep='	')
         datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
         termos = arquivo["Term"].fillna('')
-        appId = arquivo["App ID"].fillna('').values
+        appId = arquivo['App ID'].astype('int').fillna('0').values
+        print(appId)
+        #appId = pd.DataFrame(arquivo["App ID"]).fillna('0').astype('int').replace(0,'').values
         posicoes = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('').values
 
         #Seleção dos dados de datas
@@ -216,7 +233,7 @@ def pagina_posicionamento_app():
         base = pd.DataFrame(dados, columns = ["termos", "id", "posição","datas"])
         base.sort_values(by=['datas'], inplace=True)
         base_new = base.values.tolist()
-        google_sheets(base_new)
+        #google_sheets(base_new)
 
     def tratar_dados():
         cliente = cb_clientes.get()
