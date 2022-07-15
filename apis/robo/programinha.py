@@ -1,5 +1,4 @@
 #Importando bibliotecas de autenticação do Google
-from dataclasses import replace
 import os.path
 
 from google.auth.transport.requests import Request
@@ -77,10 +76,9 @@ def pagina_posicionamento_app():
                 values_privalia = result_privalia.get('values', [])
                 df = pd.DataFrame(values_privalia)
                 local_privalia = str((df.iloc[-1].name+2))
-
                 result_privalia = sheet_privalia.values().update(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
-                                    range='android keywords ranking!B'+local_privalia, valueInputOption='USER_ENTERED',
-                                    body={'values': data}).execute()
+                range='android keywords ranking!B'+local_privalia, valueInputOption='USER_ENTERED',
+                body={'values': data}).execute()
             elif sistema_operacional == 'Apple':
                 result_privalia = sheet_privalia.values().get(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
                 range='iOS keywords ranking vs!B:E').execute()
@@ -88,20 +86,29 @@ def pagina_posicionamento_app():
                 df = pd.DataFrame(values_privalia)
                 local_privalia = str((df.iloc[-1].name+2))
                 result_privalia = sheet_privalia.values().update(spreadsheetId='1A5kQ_wqY_Tml_Utsz2QiRZkKhWQyiNnc_vcFWUcJdE0',
-                                    range='iOS keywords ranking vs!B'+local_privalia, valueInputOption='USER_ENTERED',
-                                    body={'values': data}).execute()
+                range='iOS keywords ranking vs!B'+local_privalia, valueInputOption='USER_ENTERED',
+                body={'values': data}).execute()
+
         elif cliente == 'BanQi':
             sheet_banqi = service.spreadsheets()
-            result_banqi = sheet_banqi.values().get(spreadsheetId='1VcEG2qxqmFnERd1VE_N_OH1J3em9nDXgrr1HVcp1xcw',
-                                range='kw android semana!A:C').execute()
-            values_banqi = result_banqi.get('values', [])
-
-            df = pd.DataFrame(values_banqi)
-            local_banqi = str((df.iloc[-1].name+2))
-
-            result_banqi = sheet_banqi.values().update(spreadsheetId='1VcEG2qxqmFnERd1VE_N_OH1J3em9nDXgrr1HVcp1xcw',
-                                range='kw android semana!A'+local_banqi, valueInputOption='USER_ENTERED',
-                                body={'values': data}).execute()
+            if sistema_operacional == 'Android':
+                result_banqi = sheet_banqi.values().get(spreadsheetId='1VcEG2qxqmFnERd1VE_N_OH1J3em9nDXgrr1HVcp1xcw',
+                range='kw android semana!A:C').execute()
+                values_banqi = result_banqi.get('values', [])
+                df = pd.DataFrame(values_banqi)
+                local_banqi = str((df.iloc[-1].name+2))
+                result_banqi = sheet_banqi.values().update(spreadsheetId='1VcEG2qxqmFnERd1VE_N_OH1J3em9nDXgrr1HVcp1xcw',
+                range='kw android semana!A'+local_banqi, valueInputOption='USER_ENTERED',
+                body={'values': data}).execute()
+            elif sistema_operacional == 'Apple':
+                result_banqi = sheet_banqi.values().get(spreadsheetId='1VcEG2qxqmFnERd1VE_N_OH1J3em9nDXgrr1HVcp1xcw',
+                range='kw ios semana!A:C').execute()
+                values_banqi = result_banqi.get('values', [])
+                df = pd.DataFrame(values_banqi)
+                local_banqi = str((df.iloc[-1].name+2))
+                result_banqi = sheet_banqi.values().update(spreadsheetId='1VcEG2qxqmFnERd1VE_N_OH1J3em9nDXgrr1HVcp1xcw',
+                range='kw ios semana!A'+local_banqi, valueInputOption='USER_ENTERED',
+                body={'values': data}).execute()            
 
     #Definindo datas
     lb_periodo = Label(posicionamento_app, text="Selecione o período dos dados:")
@@ -136,11 +143,17 @@ def pagina_posicionamento_app():
         dataInicialTratada=f"{anoI}-{mesI}-{diaInicial}"
         dataFinalTratada=f"{anoF}-{mesF}-{diaFinal}"
 
-        #Seleção das colunas
+        #Lendo o arquivo
         arquivo_pasta = next(wrap_text_file())
         arquivo = pd.read_csv(arquivo_pasta, sep = "	")
+        
+        #Coluna datas
         datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
+        
+        #Coluna termos
         termos = arquivo["Term"].fillna('')
+        
+        #Coluna posicoes
         posicoes = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('').values
 
         #Seleção dos dados de datas
@@ -190,14 +203,24 @@ def pagina_posicionamento_app():
         dataInicialTratada=f"{anoI}-{mesI}-{diaInicial}"
         dataFinalTratada=f"{anoF}-{mesF}-{diaFinal}"
 
-        #Seleção das colunas
+        #Lendo o arquivo
         arquivo_pasta = next(wrap_text_file())
         arquivo = pd.read_csv(arquivo_pasta, sep='	')
+
+        #Coluna datas
         datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
+        
+        #Coluna termos
         termos = arquivo["Term"].fillna('')
-        appId = arquivo['App ID'].astype('int').fillna('0').values
-        print(appId)
-        #appId = pd.DataFrame(arquivo["App ID"]).fillna('0').astype('int').replace(0,'').values
+
+        #Coluna App ID
+        sistema_operacional = cb_os.get()
+        if sistema_operacional == 'Android':
+            appId = arquivo['App ID'].fillna('').values
+        elif sistema_operacional == 'Apple':
+            appId = arquivo['App ID'].fillna('0').astype('int').replace(0,'').values
+
+        #Coluna posicoes
         posicoes = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('').values
 
         #Seleção dos dados de datas
@@ -233,7 +256,7 @@ def pagina_posicionamento_app():
         base = pd.DataFrame(dados, columns = ["termos", "id", "posição","datas"])
         base.sort_values(by=['datas'], inplace=True)
         base_new = base.values.tolist()
-        #google_sheets(base_new)
+        google_sheets(base_new)
 
     def tratar_dados():
         cliente = cb_clientes.get()
