@@ -534,7 +534,7 @@ def pagina_rating():
 
     botao = Button(rating, text='Go!', width=5, height=1, background='red', command=tratar)
     botao.pack()
-
-
 pagina_rating()
+
+
 janela.mainloop()
