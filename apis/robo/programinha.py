@@ -1,3 +1,4 @@
+#Importando bibliotecas de autenticação do Google
 import os.path
 
 from google.auth.transport.requests import Request
