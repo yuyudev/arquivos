@@ -57,10 +57,10 @@ def pagina_posicionamento_app():
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    'client_secret.json', SCOPES)
+                    'apis/robo/client_secret.json', SCOPES)
                 creds = flow.run_local_server(port=0)
             
-            with open('token.json', 'w') as token:
+            with open('apis/robo/token.json', 'w') as token:
                 token.write(creds.to_json())
 
         service = build('sheets', 'v4', credentials=creds)
@@ -135,13 +135,13 @@ def pagina_posicionamento_app():
         retornoDataFinal=dataFinal.get()
         retornoDataInicial=dataInicial.get()
         diaInicial=retornoDataInicial[0:2]
-        mesI=retornoDataInicial[3:5]
-        anoI=retornoDataInicial[6:10]
+        mesInicial=retornoDataInicial[3:5]
+        anoInicial=retornoDataInicial[6:10]
         diaFinal=retornoDataFinal[0:2]
-        mesF=retornoDataFinal[3:5]
-        anoF=retornoDataFinal[6:10]
-        dataInicialTratada=f"{anoI}-{mesI}-{diaInicial}"
-        dataFinalTratada=f"{anoF}-{mesF}-{diaFinal}"
+        mesFinal=retornoDataFinal[3:5]
+        anoFinal=retornoDataFinal[6:10]
+        dataInicialTratada=f"{anoInicial}-{mesInicial}-{diaInicial}"
+        dataFinalTratada=f"{anoFinal}-{mesFinal}-{diaFinal}"
 
         #Lendo o arquivo
         arquivo_pasta = next(wrap_text_file())
@@ -149,41 +149,34 @@ def pagina_posicionamento_app():
         
         #Coluna datas
         datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
-        
+        datas.reset_index(inplace=True)
+        datas = datas["index"]
+
         #Coluna termos
         termos = arquivo["Term"].fillna('')
         
         #Coluna posicoes
         posicoes = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('').values
 
-        #Seleção dos dados de datas
-        datas.reset_index(inplace=True)
-        datas = datas["index"]
-
-        #Definição das colunas
-        colunaTermos = column = termos
-        colunaDatas = column = datas
-
-        #Tratamento dos dados
-        dados = []
+        #Tratamento das posicoes
         chave = []
         for lista_posicoes in posicoes:
             for posicao in lista_posicoes:
                 if type(posicao) == str:
                     chave.append(posicao)
+                    print(posicao)
                 else:
                     chave.append('%.0f'%posicao)
 
         #Adicionando novos dados
         i = 0
-        j = 0
+        
+        dados = []    
         for data in datas:
             for termo in termos:      
                 dados.append((str(termo),str(data),str(chave[i])))
-                j = j + 1
                 i = i + 1
-            j=0
-
+     
         #Criação do arquivo final
         base = pd.DataFrame(dados, columns = ["termos","datas", "posição"])
         base.sort_values(by=["datas"], inplace=True)
@@ -195,13 +188,13 @@ def pagina_posicionamento_app():
         retornoDataFinal=dataFinal.get()
         retornoDataInicial=dataInicial.get()
         diaInicial=retornoDataInicial[0:2]
-        mesI=retornoDataInicial[3:5]
-        anoI=retornoDataInicial[6:10]
+        mesInicial=retornoDataInicial[3:5]
+        anoInicial=retornoDataInicial[6:10]
         diaFinal=retornoDataFinal[0:2]
-        mesF=retornoDataFinal[3:5]
-        anoF=retornoDataFinal[6:10]
-        dataInicialTratada=f"{anoI}-{mesI}-{diaInicial}"
-        dataFinalTratada=f"{anoF}-{mesF}-{diaFinal}"
+        mesFinal=retornoDataFinal[3:5]
+        anoFinal=retornoDataFinal[6:10]
+        dataInicialTratada=f"{anoInicial}-{mesInicial}-{diaInicial}"
+        dataFinalTratada=f"{anoFinal}-{mesFinal}-{diaFinal}"
 
         #Lendo o arquivo
         arquivo_pasta = next(wrap_text_file())
@@ -226,11 +219,6 @@ def pagina_posicionamento_app():
         #Seleção dos dados de datas
         datas.reset_index(inplace=True)
         datas = datas["index"]
-
-        #Definição das colunas
-        colunaTermos = column = termos
-        colunaAppID = column = appId
-        colunaDatas = column = datas
 
         #Tratamento dos dados
         dados = []
