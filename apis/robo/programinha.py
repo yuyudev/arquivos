@@ -57,10 +57,10 @@ def pagina_posicionamento_app():
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    'apis/robo/client_secret.json', SCOPES)
+                    'C:/Users/Apis3/Documents/github/apis/robo/client_secret.json', SCOPES)
                 creds = flow.run_local_server(port=0)
             
-            with open('apis/robo/token.json', 'w') as token:
+            with open('token.json', 'w') as token:
                 token.write(creds.to_json())
 
         service = build('sheets', 'v4', credentials=creds)
@@ -146,7 +146,9 @@ def pagina_posicionamento_app():
         #Lendo o arquivo
         arquivo_pasta = next(wrap_text_file())
         arquivo = pd.read_csv(arquivo_pasta, sep = "	")
-        
+        selecao = arquivo['App Name'] == 'banQi: Conta Digital'
+        arquivo = arquivo[selecao]
+
         #Coluna datas
         datas = arquivo.T[dataFinalTratada:dataInicialTratada].fillna('')
         datas.reset_index(inplace=True)
@@ -164,7 +166,6 @@ def pagina_posicionamento_app():
             for posicao in lista_posicoes:
                 if type(posicao) == str:
                     chave.append(posicao)
-                    print(posicao)
                 else:
                     chave.append('%.0f'%posicao)
 
